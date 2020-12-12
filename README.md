@@ -1,5 +1,5 @@
 # MineSweeper
-A lightweight minesweeper game made in C++. At this stage it is functional, though there are many thigns to be improved upon.
+A lightweight minesweeper game made in C++. At this stage it is functional, though there are many things to be improved upon.
 
 ## Features
 - Selectable difficulty in mine density
