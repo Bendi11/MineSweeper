@@ -46,6 +46,7 @@ namespace minesweeper //Namespace containing all minesweeper classes, etc.
 		SDL_Window* win = NULL; //SDL2 window object
 		SDL_Renderer* render = NULL; //SDL2 renderer object for copying our textures
 		SDL_Event userE; //User event queue used to get user input
+		TTF_Font* sans; //Sans font
 		bool RUNNING = true;
 
 		/*Screen dimensions*/
@@ -72,10 +73,13 @@ namespace minesweeper //Namespace containing all minesweeper classes, etc.
 		void makeField(unsigned int H, unsigned int W, float density); //Function to make a new minefield with random mine locations
 
 		void reveal(unsigned int x, unsigned int y); //Function to reveal a tile
+		void revealNotFlagged(unsigned int x, unsigned int y); //Function to reveal all unflagged tiles around a tile
 		unsigned int findNeighbors(unsigned int x, unsigned int y); //Function to get the number of neighboard a mine has
 		bool isValid(int x, int y); //Function to check if a tile is valid, as in is on the map
 
 		void renderUpdate(); //Function to render the board onscreen
+
+		void flagUpdate(); //Function to see if flags have been set and show menus etc.
 
 		void getInput(); //Function to get user input and update the minefield accordingly
 	};

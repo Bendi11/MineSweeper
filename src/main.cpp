@@ -12,12 +12,13 @@ int main(int argc, char* argv[])
 {
 	std::ofstream log("config/log.txt");
 	minesweeper::Field f(&log);
-	f.makeField(50, 50, 20);
+	f.makeField(20, 20, 20);
 
 	while(f.RUNNING)
 	{
 		f.renderUpdate();
 		f.getInput();
+		f.flagUpdate();
 		
 	}
 

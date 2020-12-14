@@ -151,6 +151,14 @@ Field::Field(std::ofstream* _logger)
 	}
 	*logger<<"SDL renderer created!"<<std::endl; //Print that we could make the window
 	
+	sans = TTF_OpenFont("config/FreeSans.ttf", 12); //Open the free sans font
+	if(!sans) //Check if the font opened good
+	{
+		*logger<<"Couldn't open font: "<<TTF_GetError()<<std::endl; //Log the error
+		exit(EXIT_FAILURE); //Quit the program
+	}
+
+
 	/*Set universal size rectangle*/
 	size.x = 0;
 	size.y = 0;
@@ -162,6 +170,13 @@ Field::Field(std::ofstream* _logger)
 //Function to make a minefield with specified height and width in tiles
 void Field::makeField(unsigned int H, unsigned int W, float density)
 {
+	SDL_SetWindowSize(win, (SCREEN_WIDTH / W) * W, (SCREEN_HEIGHT / H) * H);
+	SCREEN_HEIGHT = (SCREEN_HEIGHT / H) * H;
+	SCREEN_WIDTH = (SCREEN_WIDTH / W) * W;
+	mineField.clear();
+	textureField.clear();
+	posField.clear();
+
 	SCALE = (SCREEN_HEIGHT / H) / TILE_HEIGHT; //Set the scale factor so tiles appear the right size
 	srand(time(NULL)); //Randomly seed the random number generator based on the current time
 	
@@ -198,8 +213,8 @@ void Field::makeField(unsigned int H, unsigned int W, float density)
 			findNeighbors(x, y); //Count up neighbors of the mine
 			textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[10]); //Set the tile texture to hidden
 			/*Set texture position*/
-			posField[x][y].x = x * (SCREEN_HEIGHT / W);
-			posField[x][y].y = y * (SCREEN_HEIGHT / H); 
+			posField[x][y].x = x * (SCREEN_HEIGHT / H);
+			posField[x][y].y = y * (SCREEN_WIDTH / W);
 			/*Set texture size*/
 			posField[x][y].w = (SCREEN_WIDTH / W);
 			posField[x][y].h = (SCREEN_HEIGHT / H);
@@ -260,7 +275,6 @@ void Field::reveal(unsigned int __x, unsigned int __y)
 	//If the minefield tile is empty, reveal all of its neighbors
 	if(!mineField[x][y].isRevealed && mineField[x][y].adjacentMines == 0)
 	{
-		*logger<<"EMPTY!"<<std::endl;
 		textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[EMPTY]);
 		mineField[x][y].isRevealed = true;
 		//Iterate through all neighbors and reveal them
@@ -286,6 +300,21 @@ void Field::reveal(unsigned int __x, unsigned int __y)
 	mineField[x][y].isRevealed = true;
 }
 
+//Function to reveal all non flagged tiles around a tile
+void Field::revealNotFlagged(unsigned int _x, unsigned int _y)
+{
+	int x = _x;
+	int y = _y;
+	if(isValid(x - 1, y + 1)) if(!mineField[x - 1][y + 1].isFlagged) reveal(x - 1, y + 1);
+	if(isValid(x, y + 1)) if(!mineField[x][y + 1].isFlagged) reveal(x, y + 1);
+	if(isValid(x + 1, y + 1)) if(!mineField[x + 1][y + 1].isFlagged) reveal(x + 1, y + 1);
+	if(isValid(x - 1, y)) if(!mineField[x - 1][y].isFlagged) reveal(x - 1, y);
+	if(isValid(x + 1, y)) if(!mineField[x + 1][y].isFlagged) reveal(x + 1, y);
+	if(isValid(x - 1, y - 1)) if(!mineField[x - 1][y - 1].isFlagged) reveal(x - 1, y - 1);
+	if(isValid(x, y - 1)) if(!mineField[x][y - 1].isFlagged) reveal(x, y - 1);
+	if(isValid(x + 1, y - 1)) if(!mineField[x + 1][y - 1].isFlagged) reveal(x + 1, y - 1);
+}
+
 //Function to get user input
 void Field::getInput()
 {
@@ -309,8 +338,25 @@ void Field::getInput()
 				unsigned int mX = (unsigned int)userE.motion.x / (SCREEN_WIDTH / mineField.size());
 				unsigned int mY = (unsigned int)userE.motion.y / (SCREEN_HEIGHT / mineField[0].size());
 
-				mineField[mX][mY].isFlagged = true; //Flag the tile
-				textureField[mX][mY] = SDL_CreateTextureFromSurface(render, texturesList[11]);
+				if(!mineField[mX][mY].isFlagged) 
+				{
+					mineField[mX][mY].isFlagged = true; //Flag the tile
+					textureField[mX][mY] = SDL_CreateTextureFromSurface(render, texturesList[11]);
+				}
+				else
+				{
+					mineField[mX][mY].isFlagged = false; //Unflag the tile
+					if(mineField[mX][mY].isRevealed) textureField[mX][mY] = SDL_CreateTextureFromSurface(render, texturesList[mineField[mX][mY].adjacentMines]);
+					else textureField[mX][mY] = SDL_CreateTextureFromSurface(render, texturesList[HIDDEN]);
+				}
+				
+			}
+			else if(userE.button.button == SDL_BUTTON_MIDDLE) //If the user is revealing all unflagged neighbors
+			{
+				unsigned int mX = (unsigned int)userE.motion.x / (SCREEN_WIDTH / mineField.size());
+				unsigned int mY = (unsigned int)userE.motion.y / (SCREEN_HEIGHT / mineField[0].size());
+
+				revealNotFlagged(mX, mY); //Reveal all non flagged tiles
 			}
 			
 		}
@@ -332,5 +378,31 @@ void Field::renderUpdate()
 	}
 
 	SDL_RenderPresent(render); //Present the field
+}
+
+//Function to get flags and see if any have been updated
+void Field::flagUpdate()
+{
+	SDL_Surface * textSurface; //Surface for text
+	SDL_Color txtCol = {0, 0, 0}; //Text color
+	SDL_Rect pos;
+	pos.y = SCREEN_HEIGHT / 2;
+
+	if(events.MINE_REVEALED)
+	{
+		events.MINE_REVEALED = false;
+		SDL_SetRenderDrawColor(render, 255, 255, 255, 255); //Set the clear color to white
+		SDL_RenderClear(render); //Clear the renderer
+
+		textSurface = TTF_RenderText_Shaded(sans, "You lost!", txtCol, {255, 255, 255});
+		pos.x = (SCREEN_WIDTH / 2) - (textSurface->w / 2);
+		pos.w = (textSurface->w);
+		pos.h = TTF_FontHeight(sans); //Get font size
+
+		SDL_RenderCopy(render, SDL_CreateTextureFromSurface(render, textSurface), NULL, &pos);
+		SDL_RenderPresent(render);
+		SDL_Delay(1000);
+		makeField(mineField.size(), mineField[0].size(), 20);
+	}
 }
 
