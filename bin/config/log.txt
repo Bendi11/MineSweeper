@@ -14,5 +14,66 @@ Loaded texture from tiles/Default/seven.png
 Loaded texture from tiles/Default/eight.png
 Loaded texture from tiles/Default/bomb.png
 Loaded texture from tiles/Default/hidden.png
+Loaded texture from tiles/Default/flag.png
 Window created with width 640 and height 640
 SDL renderer created!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!
+EMPTY!

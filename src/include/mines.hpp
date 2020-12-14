@@ -21,8 +21,8 @@ namespace minesweeper //Namespace containing all minesweeper classes, etc.
 	class tile_t
 	{
 	public:
-		bool isMine; //If the tile is a mine
-		bool isRevealed; //If the tile has been revealed yet
+		bool isMine = false; //If the tile is a mine
+		bool isRevealed = false; //If the tile has been revealed yet
 		bool isFlagged = false; //If the tile is flagged as a bomb
 		uint8_t adjacentMines; //How many mines are adjacent to the tile
 

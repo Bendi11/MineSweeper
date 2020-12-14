@@ -260,19 +260,26 @@ void Field::reveal(unsigned int __x, unsigned int __y)
 	//If the minefield tile is empty, reveal all of its neighbors
 	if(!mineField[x][y].isRevealed && mineField[x][y].adjacentMines == 0)
 	{
-		textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[0]);
+		*logger<<"EMPTY!"<<std::endl;
+		textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[EMPTY]);
 		mineField[x][y].isRevealed = true;
 		//Iterate through all neighbors and reveal them
-		for(int _x = -1; x < 1; ++x)
-		{
-			for(int _y = -1; y < 1; ++y)
-			{
-				if(isValid(x + _x, y + _y))
-				{
-					reveal(x + _x, y + _y); 
-				}
-			}
-		}
+		/*
+		(x-1, y+1)	(x, y+1)	(x+1,y+1)
+
+		(x-1, y)	(x, y)		(x+1,y)
+
+		(x-1, y-1)	(x, y-1)	(x+1, y-1)
+		*/
+		if(isValid(x - 1, y + 1)) reveal(x - 1, y + 1);
+		if(isValid(x, y + 1)) reveal(x, y + 1);
+		if(isValid(x + 1, y + 1)) reveal(x + 1, y + 1);
+		if(isValid(x - 1, y)) reveal(x - 1, y);
+		if(isValid(x + 1, y)) reveal(x + 1, y);
+		if(isValid(x - 1, y - 1)) reveal(x - 1, y - 1);
+		if(isValid(x, y - 1)) reveal(x, y - 1);
+		if(isValid(x + 1, y - 1)) reveal(x + 1, y - 1);
+		
 		return;
 	}
 	textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[mineField[x][y].adjacentMines]); //Set the texture of the tile to the right value
@@ -295,7 +302,7 @@ void Field::getInput()
 				unsigned int mX = (unsigned int)userE.motion.x / (SCREEN_WIDTH / mineField.size());
 				unsigned int mY = (unsigned int)userE.motion.y / (SCREEN_HEIGHT / mineField[0].size());
 
-				if(!mineField[mX][mY].isFlagged) (mX, mY); //Reveal the tile if it isn't flagged as a bomb
+				if(!mineField[mX][mY].isFlagged) reveal(mX, mY); //Reveal the tile if it isn't flagged as a bomb
 			}
 			else if(userE.button.button == SDL_BUTTON_RIGHT) //If the user wants to flag a tile
 			{
