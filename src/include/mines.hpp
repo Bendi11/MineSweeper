@@ -1,86 +1,82 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <time.h>
 #include <random>
-#include <iostream>
+#include <fstream>
 #include <vector>
 
-/*----------TILE GRAPIHCS DEFINITIONS---------*/
-#define EMPTY "tiles/empty.bmp"
-#define HIDDEN "tiles/hidden.bmp"
-#define ONE "tiles/one.bmp"
-#define TWO "tiles/twoColor.bmp"
-#define THREE "tiles/threeColor.bmp"
-#define FOUR "tiles/fourColor.bmp"
-#define FIVE "tiles/fiveColor.bmp"
-#define SIX "tiles/sixColor.bmp"
-#define FLAG "tiles/flag.bmp"
-#define BOMB "tiles/bomb.bmp"
+#define EMPTY 0
+#define HIDDEN 10
+#define BOMB 9
+#define FLAG 11
 
-//Tile class for each tile in the map
-class tile
+#define TILE_HEIGHT 64
+#define TILE_WIDTH 64
+
+namespace minesweeper //Namespace containing all minesweeper classes, etc.
 {
+	//Tile class that holds each tile on the map's data
+	class tile_t
+	{
 	public:
-	/*Booleans for the tile*/
-	bool isMine;
-	bool isFlagged;
-	bool isHidden;
-	bool isExplored = false;
+		bool isMine; //If the tile is a mine
+		bool isRevealed; //If the tile has been revealed yet
+		bool isFlagged = false; //If the tile is flagged as a bomb
+		uint8_t adjacentMines; //How many mines are adjacent to the tile
 
-	SDL_Texture* sprite;
-	unsigned int neighborBombs;
+	};
 
-	
-};
-
-//Minesweeper game class
-class Mines
-{
-	private:
-	//Constants defining the map size in tiles
-	unsigned int MAP_SIZE_X = 50;
-	unsigned int MAP_SIZE_Y = 50;
-
-	unsigned int chance;
-
-	//Ints defining the screen size in pixels
-	unsigned int SCREEN_HEIGHT;
-	unsigned int SCREEN_WIDTH;
-
-	SDL_Event e; //User mouse event
-
-	std::vector<SDL_Texture*> textures; //Vector of all textures that we load into memory
-
+	//Object holding event flags
+	class eventMask_t
+	{
 	public:
+		bool MINE_REVEALED = false; //If user clicked a mine
+		bool HAS_WON = false; //If the user won
+		bool MENU_ENTERED = false; //If user entered a menu
 
-	//SDL objects
-	SDL_Window* gameWin = NULL; //The window object 
-	SDL_Renderer* render = NULL; //The renderer, which will render all sprites we copy to it
+	};
 
-	bool running = true;
+	//Minefield class for holding all tiles and receiving all input
+	class Field
+	{
+	public:
+		/*SDL2 things*/
+		SDL_Window* win = NULL; //SDL2 window object
+		SDL_Renderer* render = NULL; //SDL2 renderer object for copying our textures
+		SDL_Event userE; //User event queue used to get user input
+		bool RUNNING = true;
 
-	bool lose = false;
+		/*Screen dimensions*/
+		unsigned int SCREEN_HEIGHT; 
+		unsigned int SCREEN_WIDTH;
+		float SCALE; //How much to scale texture tile textures for the given screen dimensions
 
-	void findNeighbors(unsigned int x, unsigned int y); //Function to number the tiles based on neigbors
+		std::ofstream* logger; //Log file object pointer
 
-	bool reveal(unsigned int x, unsigned int y); //Function to reveal what the tile has on it
-	
-	SDL_Texture* loadBMP(std::string name); //Function to load a BMP to a texture
+		eventMask_t events; //Event mask
 
-	std::vector<std::vector<tile> > map; //2D array of tiles that makes the map
+		std::vector<SDL_Surface *> texturesList; //List of all loaded textures used so we don't need to load a new texture from HDD every frame
+		std::vector< std::vector< SDL_Texture *> > textureField; //A 2D matrix of all loaded textures
+		std::vector< std::vector< SDL_Rect > > posField; //A 2D matrix of all texture positions
+		SDL_Rect size; //Size rectangle
+		unsigned int NUM_MINES; //How many mines there are in the field
 
-	Mines(bool GPUaccel); //Class constructor for the Mines class, used for init SDL things mostly
+		std::vector< std::vector<tile_t> > mineField; //2D matrix of all tiles
 
-	void renderUpdate(); //Function to display the map using the values changed during getInput
+		/*Functions*/
+		Field(std::ofstream* _logger); //Function to make a new minefield object
+		void loadCfg(std::string path); //Function to load a config file and set values
 
-	void getInput(); //Function to get player clicks and see where they are, then adjust values accordingly
+		void makeField(unsigned int H, unsigned int W, float density); //Function to make a new minefield with random mine locations
 
-	void makeDebugMap(); //Function to make a test map for debugging
+		void reveal(unsigned int x, unsigned int y); //Function to reveal a tile
+		unsigned int findNeighbors(unsigned int x, unsigned int y); //Function to get the number of neighboard a mine has
+		bool isValid(int x, int y); //Function to check if a tile is valid, as in is on the map
 
-	void makeRandomMap(unsigned int numMines); //Function to make a pseudo-random layout of mines
+		void renderUpdate(); //Function to render the board onscreen
 
-	void revealAllHidden(unsigned int x, unsigned int y);
-
-	void exploreAllHidden(); //Function to auto reveal empty tiles that have been discovered
-
-};
+		void getInput(); //Function to get user input and update the minefield accordingly
+	};
+}

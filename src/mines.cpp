@@ -1,560 +1,329 @@
 #include "mines.hpp"
 
-/*
-TODO:
-Make neighbor bomb detection work on outer rim of the grid
-*/
+using namespace minesweeper;
 
-//Function to load a BMP to an SDL_Texture
-SDL_Texture* Mines::loadBMP(std::string name)
+//Function to read over descriptor line and return actual value of cfg file
+std::string readCfgLine(std::ifstream& inFile)
 {
-	SDL_Texture* loadedText = NULL;
+	std::string line; //String holding contents of read line
+	std::getline(inFile, line); //Read over the descriptor line
 
-	//Loading the BMP to a surface, then converting the surface to a texture
-	loadedText = SDL_CreateTextureFromSurface(this->render, SDL_LoadBMP(name.c_str()));
-	//Making sure the texture loaded correctly
-	if(loadedText == NULL)
-	{
-		//std::cout<<"Error Loading BMP From: "<<name<<std::endl;
-		exit(1);
-	}
-	//std::cout<<"Loaded Texture: "<<name<<" Good!\n";
-
-	return loadedText;
-
-	SDL_DestroyTexture(loadedText);
+	std::getline(inFile, line); //Read the actual value
+	return line; //Return the read value
 }
 
-//Mines class constructor
-Mines::Mines(bool GPUaccel)
+//Function to load a config file and set values
+void Field::loadCfg(std::string path)
 {
-	srand(rand()); //Randomly seeding the random # generator
-
-	const SDL_MessageBoxButtonData buttons[] = {
-	/*Flags, buttonid, text*/
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "10 / 100"},
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "15 / 100"},
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 3, "20 / 100"}
-	};
-
-	const SDL_MessageBoxColorScheme colors = {
-		{
-			/* [SDL_MESSAGEBOX_COLOR_BACKGROUND] */
-			{ 255,   255,   255 },
-			/* [SDL_MESSAGEBOX_COLOR_TEXT] */
-			{   0, 0,   0 },
-			/* [SDL_MESSAGEBOX_COLOR_BUTTON_BORDER] */
-			{ 60, 60,   60 },
-			/* [SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND] */
-			{   230,   230, 230 },
-			/* [SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED] */
-			{ 210,   210, 210 }
-		}
-	};
-
-	const SDL_MessageBoxData msg = 
+	std::ifstream cfgFile(path); //Open the cfg file
+	if(!cfgFile.is_open()) //Make sure the config file exists
 	{
-		SDL_MESSAGEBOX_INFORMATION,
-		this->gameWin,
-		"Minesweeper",
-		"Select a difficulty in mines per 100 squares",
-		SDL_arraysize(buttons),
-		buttons,
-		&colors
-	};
-
-	int buttonID;
-	SDL_ShowMessageBox(&msg, &buttonID);
-	switch(buttonID)
-	{
-		case 1:
-		this->chance = 10;
-		break;
-
-		case 2: 
-		this->chance = 15;
-		break;
-
-		case 3:
-		this->chance = 20;
-		break;
+		*logger<<"Config file couldn't be opened from "<<path<<std::endl; //Log the error
+		exit(EXIT_FAILURE); //Quit the program
 	}
+	*logger<<"Config file opened from "<<path<<std::endl; //Log that the file was opened
 
-	const SDL_MessageBoxButtonData sizeB[] = {
-	/*Flags, buttonid, text*/
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "20x20"},
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "50x50"},
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 3, "30x30"},
-	{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 4, "25x25"}
-	};
+	std::string line; //String holding contents of read value from CFG file
 
-	const SDL_MessageBoxData sizeMsg = 
-	{
-		SDL_MESSAGEBOX_INFORMATION,
-		NULL,
-		"Minesweeper",
-		"Select size in tiles",
-		SDL_arraysize(sizeB),
-		sizeB,
-		&colors
-	};
+	line = readCfgLine(cfgFile); //Read screen width from the cfg file
+	SCREEN_WIDTH = stoi(line); //Convert line to an integer and store in SCREEN_WIDTH
 
-	SDL_ShowMessageBox(&sizeMsg, &buttonID);
-	switch(buttonID)
-	{
-		case 1:
-		this->MAP_SIZE_X = 20;
-		this->MAP_SIZE_Y = 20;
-		break;
+	line = readCfgLine(cfgFile); //Read screen height from the cfg file
+	SCREEN_HEIGHT = stoi(line); //Convert line to an integer and store in SCREEN_HEIGHT
 
-		case 2: 
-		this->MAP_SIZE_X = 50;
-		this->MAP_SIZE_Y = 50;
-		break;
+	/*Start loading the tile textures using paths from cfg file*/
 
-		case 3:
-		this->MAP_SIZE_X = 30;
-		this->MAP_SIZE_Y = 30;
-		break;
+	line = readCfgLine(cfgFile); //Load the empty tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
 
-		case 4:
-		this->MAP_SIZE_X = 25;
-		this->MAP_SIZE_Y = 25;
-		break;
-	}
+	line = readCfgLine(cfgFile); //Load the one tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
 
 
-	//Setting the screen size in pixels based on the number of tiles
-	this->SCREEN_HEIGHT = this->MAP_SIZE_Y * 16;
-	this->SCREEN_WIDTH = this->MAP_SIZE_X * 16;
+	line = readCfgLine(cfgFile); //Load the two tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
 
-	//Init SDL Video
-	//SDL_Init returns 0 if it succeeded, and an int if it failed, so we only have to check if SDL_Init doesn't return 0
+
+	line = readCfgLine(cfgFile); //Load the three tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+
+	line = readCfgLine(cfgFile); //Load the four tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+
+	line = readCfgLine(cfgFile); //Load the five tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) ); //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+
+	line = readCfgLine(cfgFile); //Load the six tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+
+	line = readCfgLine(cfgFile); //Load the seven tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+	line = readCfgLine(cfgFile); //Load the eight tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+	line = readCfgLine(cfgFile); //Load the bomb tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) );  //Push the loaded texture back
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+
+	line = readCfgLine(cfgFile); //Load the hidden tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) ); //Attempt to load hidden tile from path 
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+	line = readCfgLine(cfgFile); //Load the flag tile path
+	
+	texturesList.push_back(IMG_Load(line.c_str()) ); //Attempt to load flag tile from path 
+	*logger<<"Loaded texture from "<<line<<std::endl; //Log that the texture was loaded
+
+}
+
+//Function to make a new minefield object
+Field::Field(std::ofstream* _logger)
+{
+	logger = _logger; //Point to the given log gile object
+	*logger<<"Log file opened!"<<std::endl; //Print some text to the file to show we opened the log file good
+	
+	//Init SDL2 
 	if(SDL_Init(SDL_INIT_VIDEO))
 	{
-		//std::cout<<"SDL_Init Error: "<<SDL_GetError()<<std::endl;
-		exit(1);
-	} 
-
-	//std::cout<<"SDL_Init Good!\n";
-
-
-	//Creating our window
-	this->gameWin = SDL_CreateWindow("Minesweeper", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, this->SCREEN_WIDTH,this->SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-
-	//Print an error message if our window failed to create
-	if(this->gameWin == NULL)
-	{
-		//std::cout<<"CreateWindow Error: "<<SDL_GetError()<<std::endl;
-		exit(1);
+		*logger<<"SDL_Init failed with error: "<<SDL_GetError()<<std::endl; //Print an error message
+		exit(EXIT_FAILURE); //Quit the program
 	}
-	//std::cout<<"Window Created\n";
+	*logger<<"SDL2 Init good!"<<std::endl; //Print that the init went good
 
-	//Creating our renderer based on the GPUaccel argument
-	if(GPUaccel)
+	//Now try to init SDL_TTF library
+	if(TTF_Init() < 0)
 	{
-		//Use GPU to render if the bool is true
-		this->render = SDL_CreateRenderer(this->gameWin, -1, SDL_RENDERER_ACCELERATED);
-		//std::cout<<"Renderer created with GPU acceleration!\n";
+		*logger<<"TTF_Init failed with error: "<<TTF_GetError()<<std::endl; //Let the user know that TTF init failed
+		exit(EXIT_FAILURE); //Quit the application
 	}
-	else 
+	*logger<<"TTF_Init good!"<<std::endl; //Print that TTF init was good
+
+	//Finally init SDL2_Image library
+	if(!IMG_Init(IMG_INIT_PNG))
 	{
-		//Use CPU for rendering if the bool is false
-		this->render = SDL_CreateRenderer(this->gameWin, -1, SDL_RENDERER_SOFTWARE);
-		//std::cout<<"Renderer created without GPU acceleration!\n";
+		*logger<<"IMG_Init failed with error: "<<IMG_GetError()<<std::endl; //Print that IMG could not be init
+		exit(EXIT_FAILURE); //Quit the program
 	}
+	*logger<<"IMG_Init good!"<<std::endl; //Print that IMG_Init was good
 
-	//Resizing the textures vector
-	this->textures.resize(10);
+	loadCfg("config/config.conf"); //Load the CFG file from path
 
-	/*Load one copy of each texture to memory*/
-	this->textures[0] = this->loadBMP(EMPTY);
-	this->textures[1] = this->loadBMP(HIDDEN);
-	this->textures[2] = this->loadBMP(ONE);
-	this->textures[3] = this->loadBMP(TWO);
-	this->textures[4] = this->loadBMP(THREE);
-	this->textures[5] = this->loadBMP(FOUR);
-	this->textures[6] = this->loadBMP(FIVE);
-	this->textures[7] = this->loadBMP(SIX);
-	this->textures[8] = this->loadBMP(FLAG);
-	this->textures[9] = this->loadBMP(BOMB);
-
-	//Resizing the map matrix to the specified size
-	this->map.resize(this->MAP_SIZE_Y);
-	for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
+	//Attempt to create SDL2 window object
+	win = SDL_CreateWindow("Minesweeper", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_HEIGHT, SCREEN_WIDTH, SDL_WINDOW_SHOWN);
+	if(!win) //Check if the window doesn't exist
 	{
-		this->map[y].resize(this->MAP_SIZE_X);
+		*logger<<"SDL_CreateWindow failed with error: "<<SDL_GetError()<<std::endl; //Print that SDL2 window couldn't be created
+		exit(EXIT_FAILURE); //Quit the program
 	}
+	*logger<<"Window created with width "<<SCREEN_WIDTH<<" and height "<<SCREEN_HEIGHT<<std::endl; //Print that the window was created good
 
-
-
-
-}
-
-//Function to render all tiles
-void Mines::renderUpdate()
-{
-	//The position of a tile is determined by an SDL_Rect
-	SDL_Rect pos;
-	pos.w = 16;
-	pos.h = 16;
-
-
-	//Iterate through each tile in the map matrix
-	for(unsigned x = 0; x < this->MAP_SIZE_X; ++x)
+	render = SDL_CreateRenderer(win, -1, SDL_RENDERER_SOFTWARE); //Create a software renderer in SDL2
+	if(!render) //Checking if the renderer creation failed
 	{
-		for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
-		{
-			pos.x = x * 16;
-			pos.y = y * 16;
-			if(this->map[x][y].isFlagged)
-			{
-				SDL_DestroyTexture(this->map[x][y].sprite);
-				this->map[x][y].sprite = this->loadBMP(FLAG);
-			}
-
-			//Copy the tile's sprite to the renderer
-			SDL_RenderCopy(this->render, this->map[x][y].sprite, NULL, &pos);
-		}
+		*logger<<"SDL_CreateRenderer failed with error: "<<SDL_GetError()<<std::endl; //Print an error message
+		exit(EXIT_FAILURE); //Quit the program
 	}
-
-	SDL_RenderPresent(this->render);
-}
-
-//Function to make a test map for debugging
-void Mines::makeDebugMap()
-{
-	this->map[5][5].isMine = true;
-	for(unsigned x = 0; x < this->MAP_SIZE_X; ++x)
-	{
-		for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
-		{
-			if(x != 0 && y != 0)
-			{
-				this->findNeighbors(x, y);
-			}
-			this->map[x][y].sprite = this->loadBMP(HIDDEN);
-		}
-	}
+	*logger<<"SDL renderer created!"<<std::endl; //Print that we could make the window
 	
+	/*Set universal size rectangle*/
+	size.x = 0;
+	size.y = 0;
+	size.w = TILE_WIDTH;
+	size.h = TILE_HEIGHT;
+
 }
 
-bool Mines::reveal(unsigned int x, unsigned int y)
+//Function to make a minefield with specified height and width in tiles
+void Field::makeField(unsigned int H, unsigned int W, float density)
 {
-	SDL_DestroyTexture(this->map[x][y].sprite);
-	this->map[x][y].isHidden = false;
+	SCALE = (SCREEN_HEIGHT / H) / TILE_HEIGHT; //Set the scale factor so tiles appear the right size
+	srand(time(NULL)); //Randomly seed the random number generator based on the current time
+	
+	mineField.resize(W); //Resize matrices Y
+	textureField.resize(W);
+	posField.resize(W);
 
-	if(this->map[x][y].isMine)
+	for(unsigned n = 0; n < W; ++n)
 	{
-		this->map[x][y].sprite = this->loadBMP(BOMB);
-		return true; //Return true if user just clicked a mine
+		mineField[n].resize(H);
+		textureField[n].resize(H);
+		posField[n].resize(H);
 	}
-	else 
+
+	//Iterate through each tile
+	for(unsigned x = 0; x < W; ++x)
 	{
-		//Destroying the current texture to prevent a memory leak	
-		switch(this->map[x][y].neighborBombs)
+		for(unsigned y = 0; y < H; ++y)
 		{
-			case 0:
-				this->map[x][y].sprite = this->loadBMP(EMPTY);
-				if((x != 0 && y != 0) && (x != this->MAP_SIZE_X - 1 && y != this->MAP_SIZE_Y - 1) )
-				{
-					//this->exploreAllHidden();
-					for(int mX = -1; mX <= 1; ++mX)
-					{
-						for(int mY = -1; mY <= 1; ++mY)
-						{
-							if(this->map[x + mX][y + mY].neighborBombs == 0)
-							{
-								SDL_DestroyTexture(this->map[x + mX][y + mY].sprite);
-								this->map[x + mX][y + mY].sprite = this->loadBMP(EMPTY);
-							}
-							else
-							{
-								SDL_DestroyTexture(this->map[x + mX][y + mY].sprite);
-								switch(this->map[x + mX][y + mY].neighborBombs)
-								{
-									case 1:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(ONE);
-									break;
-
-									case 2:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(TWO);
-									break;
-
-									case 3:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(THREE);
-									break;
-
-									case 4:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(FOUR);
-									break;
-
-									case 5:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(FIVE);
-									break;
-
-									case 6:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(SIX);
-									break;
-								}
-							}
-							
-						}
-					}
-				}
-			break;
-
-			case 1:
-				this->map[x][y].sprite = this->loadBMP(ONE);
-			break;
-
-			case 2:
-				this->map[x][y].sprite = this->loadBMP(TWO);
-			break;
-
-			case 3:
-				this->map[x][y].sprite = this->loadBMP(THREE);
-			break;
-
-			case 4:
-				this->map[x][y].sprite = this->loadBMP(FOUR);
-			break;
-
-			case 5:
-				this->map[x][y].sprite = this->loadBMP(FIVE);
-			break;
-
-			case 6:
-				this->map[x][y].sprite = this->loadBMP(SIX);
-			break;
+			//If random number generator decides the tile is a bomb, the tile is a bomb
+			if(rand() % 100 < density)
+			{
+				mineField[x][y].isMine = true; 
+				NUM_MINES++;
+			}
 		}
-		return false;
+	}
+
+	//Iterate through each tile
+	for(unsigned x = 0; x < W; ++x)
+	{
+		for(unsigned y = 0; y < H; ++y)
+		{
+			findNeighbors(x, y); //Count up neighbors of the mine
+			textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[10]); //Set the tile texture to hidden
+			/*Set texture position*/
+			posField[x][y].x = x * (SCREEN_HEIGHT / W);
+			posField[x][y].y = y * (SCREEN_HEIGHT / H); 
+			/*Set texture size*/
+			posField[x][y].w = (SCREEN_WIDTH / W);
+			posField[x][y].h = (SCREEN_HEIGHT / H);
+
+		}
 	}
 }
 
-//Function for getting all input events
-void Mines::getInput()
+//Function to check if a tile is out of bounds or not
+bool Field::isValid(int x, int y)
 {
-	if(this->lose == true)
+	//Check if the tile is out of bounds and return true if it is
+	return ( (y > -1) && (y < mineField[0].size() ) && (x > -1) && (x < mineField.size()) );
+		   
+}
+
+//Function to find the neighbor mines of a tile
+unsigned int Field::findNeighbors(unsigned int _x, unsigned int _y)
+{
+	int x = _x;
+	int y = _y;
+	/*
+	(x-1, y+1)	(x, y+1)	(x+1,y+1)
+
+	(x-1, y)	(x, y)		(x+1,y)
+
+	(x-1, y-1)	(x, y-1)	(x+1, y-1)
+	*/
+	/*Count adjacent mine of the tile*/
+	if(isValid(x - 1, y + 1)) if(mineField[x - 1][y + 1].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x, y + 1)) if(mineField[x][y + 1].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x + 1, y + 1)) if(mineField[x + 1][y + 1].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x - 1, y)) if(mineField[x - 1][y].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x + 1, y)) if(mineField[x + 1][y].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x - 1, y - 1)) if(mineField[x - 1][y - 1].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x, y - 1)) if(mineField[x][y - 1].isMine) mineField[x][y].adjacentMines++;
+	if(isValid(x + 1, y - 1)) if(mineField[x + 1][y - 1].isMine) mineField[x][y].adjacentMines++;
+	return mineField[x][y].adjacentMines;
+}
+
+//Function to reveal a tile
+void Field::reveal(unsigned int __x, unsigned int __y)
+{
+	int x = __x;
+	int y = __y;
+	if(mineField[x][y].isRevealed)
 	{
-		this->makeRandomMap(1);
-		this->lose = false;
-		SDL_Delay(500);
 		return;
 	}
-	/*
-	Explanation: SDL Input
-	SDL handles all user input from keyboard and mouse, even joysticks, in an event queue 
-	This function cycles through each event in the queue and checks if they are a mouse event
+	SDL_DestroyTexture(textureField[x][y]); //Destroy the loaded texture
 
-	*/
-
-	unsigned int mX;
-	unsigned int mY;
-
-	SDL_WaitEvent(&this->e);
-	if(e.type == SDL_QUIT)
+	if(mineField[x][y].isMine)
 	{
-		this->running = false;
+		textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[9]); //Set the texture to a mine
+		events.MINE_REVEALED = true; //Set that we revealed a mine
+		return; //Exit the function
 	}
-	mX = this->e.button.x / 16;
-	mY = this->e.button.y / 16;
-
-	if(e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEMOTION)
+	//If the minefield tile is empty, reveal all of its neighbors
+	if(!mineField[x][y].isRevealed && mineField[x][y].adjacentMines == 0)
 	{
-
-		if(this->e.button.button == SDL_BUTTON(SDL_BUTTON_LEFT))
-		{	
-			if(!this->map[mX][mY].isFlagged)
+		textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[0]);
+		mineField[x][y].isRevealed = true;
+		//Iterate through all neighbors and reveal them
+		for(int _x = -1; x < 1; ++x)
+		{
+			for(int _y = -1; y < 1; ++y)
 			{
-				if(this->reveal(mX, mY))
+				if(isValid(x + _x, y + _y))
 				{
-					this->lose = true;
+					reveal(x + _x, y + _y); 
 				}
 			}
 		}
-		if(this->e.button.button == SDL_BUTTON_RIGHT)
-		{
-			if(!this->map[mX][mY].isFlagged)
-			{
-				this->map[mX][mY].isFlagged = true;
-				SDL_DestroyTexture(this->map[mX][mY].sprite);
-				this->map[mX][mY].sprite = this->loadBMP(FLAG);
-			}
-			else 
-			{
-				this->map[mX][mY].isFlagged = false;
-				SDL_DestroyTexture(this->map[mX][mY].sprite);
-				this->map[mX][mY].sprite = this->loadBMP(HIDDEN);
-			}
-				
-		}
-
+		return;
 	}
-
-
+	textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[mineField[x][y].adjacentMines]); //Set the texture of the tile to the right value
+	mineField[x][y].isRevealed = true;
 }
 
-void Mines::findNeighbors(unsigned int x, unsigned int y)
+//Function to get user input
+void Field::getInput()
 {
-	if( (x != this->MAP_SIZE_X-1 && y != this->MAP_SIZE_Y-1) && (x != 0 && y != 0) )
+	while(SDL_PollEvent(&userE)) //Poll through all events in the queue
 	{
-		for(int nX = -1; nX < 2; ++nX)
+		if(userE.type == SDL_QUIT)
 		{
-			for(int nY = -1; nY < 2; ++nY)
-			{
-				//Adding to the number of mines as neighbors
-				this->map[x][y].neighborBombs += (unsigned int)this->map[x + nX][y + nY].isMine;
-			}
+			RUNNING = false; //Quit the program
 		}
-	}
-	else if(x == 0 && (y != 0 && y != this->MAP_SIZE_Y - 1)) //If on the furthest left
-	{
-		for(int nX = 0; nX < 2; ++nX)
+		else if(userE.type == SDL_MOUSEBUTTONUP) //If the user clicked on a tile
 		{
-			for(int nY = -1; nY < 2; ++nY)
+			if(userE.button.button == SDL_BUTTON_LEFT) //If the user wants to reveal a tile
 			{
-				//Adding to the number of mines as neighbors
-				this->map[x][y].neighborBombs += (unsigned int)this->map[x + nX][y + nY].isMine;
-			}
-		}
-	}
-	else if(x == this->MAP_SIZE_X - 1 && (y != 0 && y != this->MAP_SIZE_Y - 1)) //If on the furthest right
-	{
-		for(int nX = -1; nX < 1; ++nX)
-		{
-			for(int nY = -1; nY < 2; ++nY)
-			{
-				//Adding to the number of mines as neighbors
-				this->map[x][y].neighborBombs += (unsigned int)this->map[x + nX][y + nY].isMine;
-			}
-		}
-	}
-	else if((x != 0 && x != this->MAP_SIZE_X - 1) && y == this->MAP_SIZE_Y - 1) //If on the furthest down
-	{
-		for(int nX = -1; nX < 2; ++nX)
-		{
-			for(int nY = -1; nY < 1; ++nY)
-			{
-				//Adding to the number of mines as neighbors
-				this->map[x][y].neighborBombs += (unsigned int)this->map[x + nX][y + nY].isMine;
-			}
-		}
-	}
-	else if((x != 0 && x != this->MAP_SIZE_X - 1) && y == 0) //If on the furthest up
-	{
-		for(int nX = -1; nX < 2; ++nX)
-		{
-			for(int nY = 0; nY < 2; ++nY)
-			{
-				//Adding to the number of mines as neighbors
-				this->map[x][y].neighborBombs += (unsigned int)this->map[x + nX][y + nY].isMine;
-			}
-		}
-	}
+				unsigned int mX = (unsigned int)userE.motion.x / (SCREEN_WIDTH / mineField.size());
+				unsigned int mY = (unsigned int)userE.motion.y / (SCREEN_HEIGHT / mineField[0].size());
 
+				if(!mineField[mX][mY].isFlagged) (mX, mY); //Reveal the tile if it isn't flagged as a bomb
+			}
+			else if(userE.button.button == SDL_BUTTON_RIGHT) //If the user wants to flag a tile
+			{
+				unsigned int mX = (unsigned int)userE.motion.x / (SCREEN_WIDTH / mineField.size());
+				unsigned int mY = (unsigned int)userE.motion.y / (SCREEN_HEIGHT / mineField[0].size());
+
+				mineField[mX][mY].isFlagged = true; //Flag the tile
+				textureField[mX][mY] = SDL_CreateTextureFromSurface(render, texturesList[11]);
+			}
+			
+		}
+	}
 }
 
-void Mines::makeRandomMap(unsigned int numMines)
+//Function to render the game
+void Field::renderUpdate()
 {
-	double r;
-	srand(time(NULL));
+	SDL_Delay(13);
+	SDL_RenderClear(render); //Clear the renderer of loaded textures
 
-	for(unsigned x = 0; x < this->MAP_SIZE_X; ++x)
+	for(unsigned x = 0; x < mineField.size(); ++x)
 	{
-		for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
+		for(unsigned y = 0; y < mineField[0].size(); ++y)
 		{
-			this->map[x][y].isMine = false;
-			this->map[x][y].isFlagged = false;
-			this->map[x][y].neighborBombs = 0;
-			SDL_DestroyTexture(this->map[x][y].sprite);
-			this->map[x][y].isHidden = true;
-		}
-	}
-	for(unsigned x = 0; x < this->MAP_SIZE_X; ++x)
-	{
-		for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
-		{
-			r = rand() % 100;
-
-			if(r > 100 - this->chance)
-			{
-				//if(x != 0 && y != 0)
-				//{
-					this->map[x][y].isMine = true;
-				//}
-			}
+			SDL_RenderCopy(render, textureField[x][y], &size, &posField[x][y]);
 		}
 	}
 
-	for(unsigned x = 0; x < this->MAP_SIZE_X; ++x)
-	{
-		for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
-		{
-			//if(x != 0 && y != 0)
-			//{
-				this->findNeighbors(x, y);
-			//}
-			this->map[x][y].sprite = this->loadBMP(HIDDEN);
-		}
-	}
+	SDL_RenderPresent(render); //Present the field
 }
 
-void Mines::exploreAllHidden()
-{
-	for(unsigned x = 0; x < this->MAP_SIZE_X; ++x)
-	{
-		for(unsigned y = 0; y < this->MAP_SIZE_Y; ++y)
-		{
-			if(this->map[x][y].neighborBombs == 0 && this->map[x][y].isMine == false && this->map[x][y].isHidden == false && !(this->map[x][y].isExplored))
-			{
-				if((x != 0 && y != 0) && (x != this->MAP_SIZE_X - 1 && y != this->MAP_SIZE_Y - 1) )
-				{
-					for(int mX = -1; mX <= 1; ++mX)
-					{
-						for(int mY = -1; mY <= 1; ++mY)
-						{
-							if(this->map[x + mX][y + mY].neighborBombs == 0)
-							{
-								SDL_DestroyTexture(this->map[x + mX][y + mY].sprite);
-								this->map[x + mX][y + mY].sprite = this->loadBMP(EMPTY);
-							}
-							else
-							{
-								SDL_DestroyTexture(this->map[x + mX][y + mY].sprite);
-								switch(this->map[x + mX][y + mY].neighborBombs)
-								{
-									case 1:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(ONE);
-									break;
-
-									case 2:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(TWO);
-									break;
-
-									case 3:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(THREE);
-									break;
-
-									case 4:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(FOUR);
-									break;
-
-									case 5:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(FIVE);
-									break;
-
-									case 6:
-										this->map[x + mX][y + mY].sprite = this->loadBMP(SIX);
-									break;
-								}
-							}
-							this->map[x + mX][y + mY].isHidden = false;
-							
-						}
-					}
-				}
-			}
-		}
-	}
-}

@@ -1,0 +1,18 @@
+Log file opened!
+SDL2 Init good!
+TTF_Init good!
+IMG_Init good!
+Config file opened from config/config.conf
+Loaded texture from tiles/Default/empty.png
+Loaded texture from tiles/Default/one.png
+Loaded texture from tiles/Default/two.png
+Loaded texture from tiles/Default/three.png
+Loaded texture from tiles/Default/four.png
+Loaded texture from tiles/Default/five.png
+Loaded texture from tiles/Default/six.png
+Loaded texture from tiles/Default/seven.png
+Loaded texture from tiles/Default/eight.png
+Loaded texture from tiles/Default/bomb.png
+Loaded texture from tiles/Default/hidden.png
+Window created with width 640 and height 640
+SDL renderer created!
