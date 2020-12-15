@@ -12,7 +12,60 @@ int main(int argc, char* argv[])
 {
 	std::ofstream log("config/log.txt");
 	minesweeper::Field f(&log);
-	f.makeField(15, 15, 10);
+	unsigned int boardSize;
+	float density;
+	
+	/*Letting the user pick a size and difficulty*/
+	SDL_MessageBoxButtonData buttons[] = 
+	{
+		{0, 0, "15x15"},
+		{0, 1, "25x25"},
+		{0, 2, "35x35"},
+		{0, 2, "50x50"}
+
+	};
+	SDL_MessageBoxData sizeData = 
+	{
+		SDL_MESSAGEBOX_COLOR_TEXT,
+		NULL,
+		"Minesweeper",
+		"Select a mine field size",
+		SDL_arraysize(buttons),
+		buttons,
+		NULL
+	};
+	
+	int chosenButton = 0;
+	SDL_ShowMessageBox(&sizeData, &chosenButton); //Show the size selection box
+	/*Set the size based on what button was pressed*/
+	if(chosenButton == 0) boardSize = 15;
+	else if(chosenButton == 1) boardSize = 25;
+	else if(chosenButton == 2) boardSize = 35;
+	else if(chosenButton == 3) boardSize = 50;
+
+	/*Change the button data*/
+	buttons[0] = {0, 0, "Easy"};
+	buttons[1] = {0, 1, "Medium"};
+	buttons[2] = {0, 2, "Hard"};
+	buttons[3] = {0, 3, "Insane"};
+
+	SDL_MessageBoxData difficultyData = 
+	{
+		SDL_MESSAGEBOX_COLOR_TEXT,
+		NULL,
+		"Minesweeper",
+		"Select a difficulty",
+		SDL_arraysize(buttons),
+		buttons,
+		NULL
+	};
+	SDL_ShowMessageBox(&difficultyData, &chosenButton); //Show difficulty select
+	if(chosenButton == 0) density = 10;
+	else if(chosenButton == 1) density = 20;
+	else if(chosenButton == 2) density = 30;
+	else if(chosenButton == 3) density = 45;
+
+	f.makeField(boardSize, boardSize, density);
 
 	while(f.RUNNING)
 	{
