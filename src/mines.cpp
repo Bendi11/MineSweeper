@@ -158,7 +158,7 @@ Field::Field(std::ofstream* _logger)
 		exit(EXIT_FAILURE); //Quit the program
 	}
 
-
+	SDL_SetRenderDrawColor(render, 255, 255, 255, 255); //Set the clear color to white
 	/*Set universal size rectangle*/
 	size.x = 0;
 	size.y = 0;
@@ -170,6 +170,10 @@ Field::Field(std::ofstream* _logger)
 //Function to make a minefield with specified height and width in tiles
 void Field::makeField(unsigned int H, unsigned int W, float density)
 {
+	/*Reset values*/
+	DENSITY = density;
+	REVEALED_TILES = 0;
+	NUM_MINES = 0;
 	SDL_SetWindowSize(win, (SCREEN_WIDTH / W) * W, (SCREEN_HEIGHT / H) * H);
 	SCREEN_HEIGHT = (SCREEN_HEIGHT / H) * H;
 	SCREEN_WIDTH = (SCREEN_WIDTH / W) * W;
@@ -277,6 +281,7 @@ void Field::reveal(unsigned int __x, unsigned int __y)
 	{
 		textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[EMPTY]);
 		mineField[x][y].isRevealed = true;
+		REVEALED_TILES++; //Increase how many tiles are revealed
 		//Iterate through all neighbors and reveal them
 		/*
 		(x-1, y+1)	(x, y+1)	(x+1,y+1)
@@ -298,6 +303,8 @@ void Field::reveal(unsigned int __x, unsigned int __y)
 	}
 	textureField[x][y] = SDL_CreateTextureFromSurface(render, texturesList[mineField[x][y].adjacentMines]); //Set the texture of the tile to the right value
 	mineField[x][y].isRevealed = true;
+	REVEALED_TILES++; //Increase how many tiles are revealed
+
 }
 
 //Function to reveal all non flagged tiles around a tile
@@ -390,8 +397,9 @@ void Field::flagUpdate()
 
 	if(events.MINE_REVEALED)
 	{
+		SDL_Delay(1000); 
 		events.MINE_REVEALED = false;
-		SDL_SetRenderDrawColor(render, 255, 255, 255, 255); //Set the clear color to white
+		
 		SDL_RenderClear(render); //Clear the renderer
 
 		textSurface = TTF_RenderText_Shaded(sans, "You lost!", txtCol, {255, 255, 255});
@@ -402,7 +410,27 @@ void Field::flagUpdate()
 		SDL_RenderCopy(render, SDL_CreateTextureFromSurface(render, textSurface), NULL, &pos);
 		SDL_RenderPresent(render);
 		SDL_Delay(1000);
-		makeField(mineField.size(), mineField[0].size(), 20);
+		makeField(mineField.size(), mineField[0].size(), DENSITY);
+		SDL_FreeSurface(textSurface);
+	}
+
+	//Check if the user revealed all tiles
+	if( (mineField.size() * mineField[0].size()) - REVEALED_TILES == NUM_MINES)
+	{
+		SDL_Delay(1000); 
+		SDL_RenderClear(render); //Clear the renderer
+
+		textSurface = TTF_RenderText_Shaded(sans, "You won!", txtCol, {255, 255, 255});
+		pos.x = (SCREEN_WIDTH / 2) - (textSurface->w / 2);
+		pos.w = (textSurface->w);
+		pos.h = TTF_FontHeight(sans); //Get font size
+
+		SDL_RenderCopy(render, SDL_CreateTextureFromSurface(render, textSurface), NULL, &pos);
+		SDL_RenderPresent(render);
+		SDL_Delay(1000);
+		makeField(mineField.size(), mineField[0].size(), DENSITY);
+		SDL_FreeSurface(textSurface); 
+
 	}
 }
 

@@ -53,6 +53,7 @@ namespace minesweeper //Namespace containing all minesweeper classes, etc.
 		unsigned int SCREEN_HEIGHT; 
 		unsigned int SCREEN_WIDTH;
 		float SCALE; //How much to scale texture tile textures for the given screen dimensions
+		float DENSITY; //Mines per 100 squares
 
 		std::ofstream* logger; //Log file object pointer
 
@@ -63,6 +64,7 @@ namespace minesweeper //Namespace containing all minesweeper classes, etc.
 		std::vector< std::vector< SDL_Rect > > posField; //A 2D matrix of all texture positions
 		SDL_Rect size; //Size rectangle
 		unsigned int NUM_MINES; //How many mines there are in the field
+		unsigned int REVEALED_TILES; //How many tiles are revealed
 
 		std::vector< std::vector<tile_t> > mineField; //2D matrix of all tiles
 

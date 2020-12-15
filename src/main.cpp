@@ -1,7 +1,7 @@
 #include "mines.hpp"
 
 /*
-g++ -std=c++17 main.cpp mines.cpp -Wall -lmingw32 -lSDL2main -mwindows -lm -lSDL2 -o main.exe
+g++ -std=c++17 src/main.cpp src/mines.cpp -Isrc/include -lmingw32 -lSDL2main -mwindows -lm -lSDL2 -lSDL2_image -lSDL2_ttf -o main.exe icon.o -O3
 */
 
 /*
@@ -12,12 +12,12 @@ int main(int argc, char* argv[])
 {
 	std::ofstream log("config/log.txt");
 	minesweeper::Field f(&log);
-	f.makeField(20, 20, 20);
+	f.makeField(15, 15, 10);
 
 	while(f.RUNNING)
 	{
-		f.renderUpdate();
 		f.getInput();
+		f.renderUpdate();
 		f.flagUpdate();
 		
 	}
