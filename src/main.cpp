@@ -60,10 +60,10 @@ int main(int argc, char* argv[])
 		NULL
 	};
 	SDL_ShowMessageBox(&difficultyData, &chosenButton); //Show difficulty select
-	if(chosenButton == 0) density = 10;
-	else if(chosenButton == 1) density = 20;
-	else if(chosenButton == 2) density = 30;
-	else if(chosenButton == 3) density = 45;
+	if(chosenButton == 0) density = 5;
+	else if(chosenButton == 1) density = 10;
+	else if(chosenButton == 2) density = 15;
+	else if(chosenButton == 3) density = 25;
 
 	f.makeField(boardSize, boardSize, density);
 
